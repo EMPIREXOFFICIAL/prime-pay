@@ -1,2 +1,4 @@
-discord.py>=2.3.0
-asyncio
+discord.py
+qrcode[pil]
+pillow
+python-dotenv
