@@ -1,0 +1,8 @@
+{
+    "prefix": ".",
+    "payment_timeout": 300,
+    "max_amount": 100000,
+    "min_amount": 1,
+    "currency_symbol": "₹",
+    "currency_name": "INR"
+}
