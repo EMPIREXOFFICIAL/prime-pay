@@ -25,7 +25,7 @@ async def on_ready():
     print(f'{bot.user} has connected to Discord!')
     print(f'Bot is in {len(bot.guilds)} guilds')
     print(f'Using UPI ID: {YOUR_UPI_ID}')
-    await bot.change_presence(activity=discord.Game(name=".pay @user 100 | .ping"))
+    await bot.change_presence(activity=discord.Game(name="EXC ON TOP"))
 
 def create_upi_qr(amount, recipient_name):
     """Create UPI QR code with fixed UPI ID and amount"""
@@ -262,3 +262,4 @@ if __name__ == "__main__":
         print(f"✅ Bot starting with UPI ID: {YOUR_UPI_ID}")
         print("📱 Commands: .pay, .ping, .ping2, .uptime, .payhelp")
         bot.run(token)
+
