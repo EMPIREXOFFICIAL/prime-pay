@@ -5,6 +5,7 @@ from io import BytesIO
 import os
 from dotenv import load_dotenv
 import urllib.parse
+import time
 
 load_dotenv()
 
@@ -24,6 +25,7 @@ async def on_ready():
     print(f'{bot.user} has connected to Discord!')
     print(f'Bot is in {len(bot.guilds)} guilds')
     print(f'Using UPI ID: {YOUR_UPI_ID}')
+    await bot.change_presence(activity=discord.Game(name=".pay @user 100 | .ping"))
 
 def create_upi_qr(amount, recipient_name):
     """Create UPI QR code with fixed UPI ID and amount"""
@@ -101,8 +103,7 @@ async def pay(ctx, member: discord.Member = None, amount: int = None):
         
         await member.send(file=file, embed=dm_embed)
         
-        # Optional: सिर्फ आपको (पेयर) को DM में confirmation चाहिए?
-        # अगर नहीं चाहिए तो ये हटा दें
+        # Send confirmation to payer (आपको)
         try:
             confirm_embed = discord.Embed(
                 title="✅ Payment Request Sent",
@@ -121,6 +122,102 @@ async def pay(ctx, member: discord.Member = None, amount: int = None):
         print(f"Error: {e}")  # सिर्फ console में error log
         pass
 
+@bot.command(name='ping')
+async def ping(ctx):
+    """
+    Check bot's latency and response time
+    Usage: .ping
+    """
+    
+    # Start time
+    start_time = time.time()
+    
+    # Send initial message (will be deleted)
+    msg = await ctx.send("🏓 Pinging...")
+    
+    # Calculate latency
+    end_time = time.time()
+    api_latency = round(bot.latency * 1000)  # Discord API latency in ms
+    response_time = round((end_time - start_time) * 1000)  # Response time in ms
+    
+    # Create embed for DM
+    embed = discord.Embed(
+        title="🏓 Pong!",
+        color=discord.Color.green()
+    )
+    embed.add_field(name="Discord API Latency", value=f"```{api_latency}ms```", inline=True)
+    embed.add_field(name="Response Time", value=f"```{response_time}ms```", inline=True)
+    embed.add_field(name="Bot Status", value="```✅ Online```", inline=True)
+    embed.add_field(name="UPI ID", value=f"`{YOUR_UPI_ID}`", inline=False)
+    embed.set_footer(text=f"Requested by {ctx.author.name}")
+    
+    # Delete the original message
+    await msg.delete()
+    
+    # Send result to DM
+    try:
+        await ctx.author.send(embed=embed)
+    except:
+        # अगर DM नहीं भेज सकते तो चैनल में ही भेजो (लेकिन 5 सेकंड बाद डिलीट कर दो)
+        temp_msg = await ctx.send(embed=embed)
+        await asyncio.sleep(5)
+        await temp_msg.delete()
+    
+    # Delete the command message
+    try:
+        await ctx.message.delete()
+    except:
+        pass
+
+@bot.command(name='ping2')
+async def ping_simple(ctx):
+    """
+    Very simple ping command (just for quick check)
+    Usage: .ping2
+    """
+    
+    latency = round(bot.latency * 1000)
+    
+    try:
+        await ctx.author.send(f"🏓 Pong! `{latency}ms`")
+    except:
+        temp_msg = await ctx.send(f"🏓 Pong! `{latency}ms`")
+        await asyncio.sleep(3)
+        await temp_msg.delete()
+    
+    try:
+        await ctx.message.delete()
+    except:
+        pass
+
+@bot.command(name='uptime')
+async def uptime(ctx):
+    """
+    Check bot uptime (needs start time tracking)
+    Usage: .uptime
+    """
+    
+    # अगर आप start time track करना चाहते हैं तो बताएं
+    embed = discord.Embed(
+        title="⏱️ Bot Information",
+        color=discord.Color.blue()
+    )
+    embed.add_field(name="Status", value="✅ Online", inline=True)
+    embed.add_field(name="Latency", value=f"`{round(bot.latency * 1000)}ms`", inline=True)
+    embed.add_field(name="UPI ID", value=f"`{YOUR_UPI_ID}`", inline=False)
+    
+    try:
+        await ctx.author.send(embed=embed)
+    except:
+        temp_msg = await ctx.send(embed=embed)
+        await asyncio.sleep(5)
+        await temp_msg.delete()
+    
+    try:
+        await ctx.message.delete()
+    except:
+        pass
+
 @bot.command(name='payhelp')
 async def pay_help(ctx):
     """Simple help command"""
@@ -129,20 +226,32 @@ async def pay_help(ctx):
         description=f"Your UPI ID: `{YOUR_UPI_ID}`",
         color=discord.Color.gold()
     )
-    embed.add_field(
-        name="如何使用",
-        value="`.pay @user 100`\nयूज़र के DM में QR code भेजेगा",
-        inline=False
-    )
     
-    # सिर्फ DM में help भेजो, चैनल में नहीं
+    commands_list = """
+    **📤 Payment Commands**
+    `.pay @user 100` - Send QR code to user's DM
+    
+    **🏓 Utility Commands**
+    `.ping` - Check bot latency (detailed)
+    `.ping2` - Quick ping check
+    `.uptime` - Bot status info
+    `.payhelp` - Show this help
+    """
+    
+    embed.description = commands_list
+    embed.set_footer(text="All commands work silently • Messages are deleted")
+    
+    # सिर्फ DM में help भेजो
     await ctx.author.send(embed=embed)
     
-    # अगर चाहो तो चैनल में कोई सबूत नहीं रहेगा
+    # Delete command message
     try:
-        await ctx.message.delete()  # कमांड मैसेज भी डिलीट कर दो
+        await ctx.message.delete()
     except:
         pass
+
+# Add asyncio for sleep function
+import asyncio
 
 # Run the bot
 if __name__ == "__main__":
@@ -151,4 +260,5 @@ if __name__ == "__main__":
         print("❌ Error: DISCORD_BOT_TOKEN not found in .env file!")
     else:
         print(f"✅ Bot starting with UPI ID: {YOUR_UPI_ID}")
+        print("📱 Commands: .pay, .ping, .ping2, .uptime, .payhelp")
         bot.run(token)
